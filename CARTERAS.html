@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clasificador de Carteras — S&C Inversiones</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   IMPORTANT: Reemplazá la URL del proxy abajo en el <script>
+   con tu URL de Google Apps Script desplegado.
+   ============================================================ */
+
+:root {
+  --teal: #1A3F47;
+  --teal-light: #2a5f6a;
+  --lime: #93D500;
+  --bg: #f3f4f7;
+  --card: #ffffff;
+  --text: #1a1a2e;
+  --muted: #6b7280;
+  --border: #e2e5ea;
+  --green: #2E7D32;
+  --orange: #F57C00;
+  --red: #C62828;
+  --radius: 12px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+input, button, textarea, select { font-family: inherit; }
+input[type="number"] { -moz-appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--teal); border-radius: 3px; }
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  height: 6px; border-radius: 3px; background: #d0d5dd;
+  outline: none; cursor: pointer; width: 100%;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--teal); border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.25); cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--teal); border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.25); cursor: pointer;
+}
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+@keyframes slideIn { from { opacity:0; transform:translateX(-16px); } to { opacity:1; transform:translateX(0); } }
+@keyframes barGrow { from { width: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+.fade-up { animation: fadeUp 0.45s ease both; }
+
+/* HEADER */
+.header { background: var(--teal); position: sticky; top: 0; z-index: 100; }
+.header-inner {
+  max-width: 860px; margin: 0 auto; padding: 18px 24px;
+  display: flex; align-items: center; gap: 14;
+}
+.logo-mark {
+  width: 46px; height: 46px; border-radius: 11px;
+  background: var(--lime); color: var(--teal);
+  font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 17px;
+  display: flex; align-items: center; justify-content: center;
+  letter-spacing: -0.5px; flex-shrink: 0;
+}
+.header-title { color: white; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 19px; }
+.header-sub { color: var(--lime); font-size: 11px; font-weight: 600; margin-top: 2px; letter-spacing: 0.8px; text-transform: uppercase; }
+.header-accent { height: 3px; background: linear-gradient(90deg, var(--lime), transparent); }
+
+/* TABS */
+.tab-bar {
+  background: var(--card); border-bottom: 1px solid var(--border);
+  display: flex; max-width: 860px; margin: 0 auto; padding: 0 16px;
+  position: sticky; top: 82px; z-index: 99;
+}
+.tab-btn {
+  padding: 14px 20px; border: none; background: none;
+  font-size: 13px; font-weight: 500; color: #999; cursor: pointer;
+  border-bottom: 2.5px solid transparent;
+  display: flex; align-items: center; gap: 7; transition: all 0.25s; white-space: nowrap;
+}
+.tab-btn:hover { color: var(--teal); }
+.tab-btn.active { color: var(--teal); border-bottom-color: var(--lime); font-weight: 600; }
+.tab-btn.disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+
+/* CONTENT */
+.content { max-width: 860px; margin: 0 auto; padding: 24px 24px 100px; }
+.section { display: none; }
+.section.active { display: block; }
+.section-desc { font-size: 14px; color: var(--muted); line-height: 1.65; margin-bottom: 22px; }
+
+/* CONFIG */
+.profile-selector { display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; }
+.profile-btn {
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 20px; border: 2px solid var(--border); border-radius: 10px;
+  background: var(--card); cursor: pointer;
+  font-family: 'Montserrat', sans-serif; font-weight: 500; font-size: 13px;
+  color: var(--muted); transition: all 0.25s;
+}
+.profile-btn:hover { border-color: #aaa; }
+.profile-btn.sel-conservadora { background: #2E7D3212; border-color: var(--green); color: var(--green); font-weight: 700; }
+.profile-btn.sel-moderada { background: #F57C0012; border-color: var(--orange); color: var(--orange); font-weight: 700; }
+.profile-btn.sel-arriesgada { background: #C6282812; border-color: var(--red); color: var(--red); font-weight: 700; }
+.profile-btn .pi { font-size: 22px; }
+
+.card { background: var(--card); border-radius: var(--radius); padding: 22px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); margin-bottom: 18px; }
+.card-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 20px; }
+.card-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 21px; margin: 0; }
+.ct-conservadora { color: var(--green); }
+.ct-moderada { color: var(--orange); }
+.ct-arriesgada { color: var(--red); }
+.desc-input {
+  border: none; border-bottom: 1px dashed #ccc; font-size: 13px; color: var(--muted);
+  width: 100%; padding: 5px 0; margin-top: 4px; outline: none; background: transparent;
+}
+.limits-row { display: flex; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+.limit-box { flex: 1; min-width: 220px; background: #f8f9fb; border-radius: 8px; padding: 14px 18px; }
+.limit-label { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
+.limit-control { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.limit-value { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 20px; min-width: 50px; text-align: right; }
+.lv-conservadora { color: var(--green); }
+.lv-moderada { color: var(--orange); }
+.lv-arriesgada { color: var(--red); }
+
+.rules-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.rules-title { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 14px; color: #333; }
+.add-btn {
+  border: 1.5px dashed; background: none; border-radius: 6px;
+  padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.ab-conservadora { color: var(--green); border-color: var(--green); }
+.ab-moderada { color: var(--orange); border-color: var(--orange); }
+.ab-arriesgada { color: var(--red); border-color: var(--red); }
+
+.rule-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid #f0f1f3; flex-wrap: wrap; }
+.asset-input {
+  flex: 1 1 200px; min-width: 180px; border: 1px solid #e0e0e0; border-radius: 7px;
+  padding: 9px 11px; font-size: 13px; outline: none;
+}
+.asset-input:focus { border-color: var(--teal); }
+.range-group { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.range-item { display: flex; align-items: center; gap: 4px; }
+.range-lbl { font-size: 10px; font-weight: 600; color: #999; text-transform: uppercase; }
+.num-input {
+  width: 52px; border: 1px solid #e0e0e0; border-radius: 6px;
+  padding: 7px 8px; font-size: 13px; text-align: center; font-family: monospace; outline: none;
+}
+.num-input:focus { border-color: var(--teal); }
+.pct { font-size: 12px; color: #999; }
+.rsep { color: #ccc; font-size: 14px; }
+.mini-bar { width: 60px; height: 6px; background: #eee; border-radius: 3px; position: relative; overflow: hidden; margin-left: 4px; }
+.mb-fill { position: absolute; height: 100%; border-radius: 3px; }
+.mbf-conservadora { background: #2E7D3255; }
+.mbf-moderada { background: #F57C0055; }
+.mbf-arriesgada { background: #C6282855; }
+.remove-btn { border: none; background: none; color: #ccc; font-size: 17px; cursor: pointer; padding: 5px 8px; }
+.remove-btn:hover { color: var(--red); }
+
+/* ANALYZE */
+.dropzone {
+  border: 2px dashed #c8cdd4; border-radius: 18px; padding: 52px 24px;
+  text-align: center; cursor: pointer; transition: all 0.3s;
+  background: var(--card); margin-bottom: 22px;
+}
+.dropzone:hover { border-color: #aaa; }
+.dropzone.drag-over { border-color: var(--lime); background: #93D50008; }
+.dropzone.loaded { border-color: var(--teal); border-style: solid; background: #1A3F4706; }
+.drop-text { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 15px; color: var(--teal); margin: 8px 0 6px; }
+.drop-hint { font-size: 12px; color: #999; }
+.file-name { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 15px; color: var(--teal); }
+.file-size { font-size: 12px; color: #999; margin-top: 2px; }
+.file-change { font-size: 11px; color: var(--lime); font-weight: 500; margin-top: 8px; }
+
+.analyze-btn {
+  width: 100%; padding: 16px; border: none; border-radius: var(--radius);
+  background: var(--teal); color: white;
+  font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 15px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  gap: 10px; transition: all 0.25s; margin-bottom: 22px;
+}
+.analyze-btn:hover { background: var(--teal-light); }
+.analyze-btn:disabled { background: var(--teal-light); cursor: wait; }
+.spinner {
+  width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: var(--lime); border-radius: 50%;
+  animation: spin 0.8s linear infinite; flex-shrink: 0;
+}
+
+/* Loading shimmer */
+.loading-bar {
+  height: 16px; border-radius: 8px; margin: 12px 0;
+  background: linear-gradient(90deg, #e8eaed 25%, #f3f4f6 50%, #e8eaed 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+.loading-bar.w1 { width: 80%; }
+.loading-bar.w2 { width: 60%; }
+.loading-bar.w3 { width: 45%; }
+.loading-status {
+  text-align: center; padding: 20px;
+  font-family: 'Montserrat', sans-serif; font-weight: 600;
+  font-size: 14px; color: var(--teal);
+}
+
+.error-box {
+  background: #FFF3F0; border: 1px solid #FFCCC0; border-radius: 10px;
+  padding: 14px 18px; font-size: 13px; color: var(--red);
+  display: flex; align-items: flex-start; gap: 8px; margin-bottom: 16px;
+}
+
+.preview-section { margin-top: 28px; }
+.preview-title {
+  font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 12px;
+  color: #aaa; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px;
+}
+.preview-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+.preview-card {
+  flex: 1 1 180px; background: var(--card); border-radius: 8px;
+  padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.pc-conservadora { border-top: 3px solid var(--green); }
+.pc-moderada { border-top: 3px solid var(--orange); }
+.pc-arriesgada { border-top: 3px solid var(--red); }
+
+/* RESULT */
+.result-badge {
+  display: flex; align-items: center; gap: 20px;
+  padding: 26px; border-radius: 16px; border: 2px solid; margin-bottom: 22px;
+}
+.rb-conservadora { background: #2E7D3210; border-color: var(--green); }
+.rb-moderada { background: #F57C0010; border-color: var(--orange); }
+.rb-arriesgada { background: #C6282810; border-color: var(--red); }
+.badge-icon { font-size: 50px; }
+.badge-cat { font-size: 12px; color: #999; font-weight: 500; text-transform: uppercase; letter-spacing: 0.6px; }
+.badge-label { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 30px; letter-spacing: -0.5px; }
+.bl-conservadora { color: var(--green); }
+.bl-moderada { color: var(--orange); }
+.bl-arriesgada { color: var(--red); }
+.badge-conf { font-size: 12px; color: #777; margin-top: 8px; display: flex; align-items: center; gap: 10px; }
+.conf-bar { width: 110px; height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
+.conf-fill { height: 100%; border-radius: 3px; animation: barGrow 1s ease; }
+.cf-conservadora { background: var(--green); }
+.cf-moderada { background: var(--orange); }
+.cf-arriesgada { background: var(--red); }
+
+.info-row { display: flex; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+.info-item { background: var(--card); border-radius: 10px; padding: 15px 18px; flex: 1 1 170px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.info-label { display: block; font-size: 11px; color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+.info-value { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 17px; color: var(--teal); }
+
+.reasoning-box { background: #1A3F4708; border-radius: var(--radius); padding: 18px 22px; margin-bottom: 18px; border-left: 3px solid var(--teal); }
+.reasoning-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 14px; margin-bottom: 8px; color: var(--teal); }
+.reasoning-text { font-size: 13px; line-height: 1.7; color: #444; }
+
+.chart-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 15px; color: var(--teal); margin-bottom: 16px; }
+.bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.bar-label { flex: 0 0 180px; font-size: 12px; color: #555; text-align: right; font-weight: 500; }
+.bar-track { flex: 1; height: 22px; background: #f0f1f3; border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; min-width: 2px; animation: barGrow 0.8s ease both; }
+.bar-value { flex: 0 0 54px; font-size: 13px; font-weight: 700; font-family: 'Montserrat', sans-serif; text-align: right; }
+
+.ptable { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ptable th {
+  text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--teal);
+  font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 11px;
+  color: var(--teal); text-transform: uppercase; letter-spacing: 0.5px;
+}
+.ptable td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-size: 12px; color: #444; }
+.ptable .tk { font-weight: 600; color: var(--teal); font-family: monospace; }
+.ptable .mn { font-family: monospace; }
+.ptable .rt { text-align: right; font-weight: 600; }
+.cat-tag { display: inline-block; background: #1A3F4710; color: var(--teal); padding: 3px 9px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+
+.warning-box { background: #FFF8E1; border: 1px solid #FFE082; border-radius: var(--radius); padding: 16px 22px; margin-bottom: 18px; }
+.warning-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 14px; margin-bottom: 10px; color: var(--orange); }
+.warning-item { font-size: 13px; color: #7A5C00; line-height: 1.7; }
+
+.suggestion-box { background: #E8F5E9; border: 1px solid #A5D6A7; border-radius: var(--radius); padding: 16px 22px; margin-bottom: 22px; }
+.suggestion-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 14px; margin-bottom: 8px; color: var(--green); }
+.suggestion-text { font-size: 13px; color: var(--green); line-height: 1.65; }
+
+.new-btn {
+  width: 100%; padding: 14px; border: 2px solid var(--teal); border-radius: 10px;
+  background: transparent; color: var(--teal);
+  font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer;
+}
+.new-btn:hover { background: var(--teal); color: white; }
+
+.footer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--teal); color: var(--lime);
+  font-size: 11px; padding: 10px 20px; text-align: center;
+  font-weight: 500; letter-spacing: 0.3px; z-index: 100;
+}
+
+@media (max-width: 640px) {
+  .header-inner { padding: 14px 16px; }
+  .header-title { font-size: 16px; }
+  .content { padding: 16px 16px 90px; }
+  .bar-label { flex: 0 0 100px; font-size: 10px; }
+  .tab-btn { padding: 12px 12px; font-size: 12px; }
+  .asset-input { min-width: 140px; }
+  .badge-label { font-size: 24px; }
+  .badge-icon { font-size: 40px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo-mark">S&C</div>
+    <div>
+      <div class="header-title">Clasificador de Carteras</div>
+      <div class="header-sub">Motor de perfilamiento automático</div>
+    </div>
+  </div>
+  <div class="header-accent"></div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="config" onclick="switchTab('config')">⚙️ Parámetros</button>
+  <button class="tab-btn" data-tab="analyze" onclick="switchTab('analyze')">📄 Analizar PDF</button>
+  <button class="tab-btn disabled" data-tab="result" onclick="switchTab('result')" id="resultTab">📊 Resultado</button>
+</div>
+
+<div class="content">
+  <div class="section active" id="section-config">
+    <p class="section-desc">Definí los rangos de exposición para cada perfil. Estos parámetros se usan para clasificar automáticamente las carteras de clientes.</p>
+    <div class="profile-selector" id="profileSelector"></div>
+    <div id="profileEditor"></div>
+  </div>
+
+  <div class="section" id="section-analyze">
+    <p class="section-desc">Subí el PDF con las posiciones/tenencias del cliente. Claude va a extraer cada posición, calcular la composición y clasificar la cartera según tus parámetros.</p>
+
+    <div class="dropzone" id="dropzone"
+      onclick="document.getElementById('fileInput').click()"
+      ondragover="event.preventDefault(); this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="handleDrop(event)">
+      <div id="dropContent">
+        <div style="opacity:0.6; margin-bottom:8px">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <rect x="8" y="6" width="32" height="36" rx="4" stroke="#1A3F47" stroke-width="2.5" fill="none"/>
+            <path d="M16 20l8-8 8 8M24 12v20" stroke="#93D500" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="drop-text">Arrastrá el PDF acá o hacé click</div>
+        <div class="drop-hint">Soporta extractos de cuenta, reportes de tenencias, estados de cartera</div>
+      </div>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf" style="display:none" onchange="handleFileSelect(this)">
+
+    <button class="analyze-btn" id="analyzeBtn" onclick="analyzePDF()" style="display:none">🔍 Clasificar Cartera</button>
+
+    <div id="loadingArea" style="display:none"></div>
+    <div id="errorBox" style="display:none"></div>
+
+    <div class="preview-section">
+      <div class="preview-title">Perfiles activos</div>
+      <div class="preview-grid" id="previewGrid"></div>
+    </div>
+  </div>
+
+  <div class="section" id="section-result"></div>
+</div>
+
+<div class="footer">S&C Inversiones S.A. — Clasificador interno · Los resultados son orientativos</div>
+
+<script>
+// ============================================================
+// ⬇️  REEMPLAZÁ ESTA URL CON TU GOOGLE APPS SCRIPT DEPLOY  ⬇️
+// ============================================================
+const PROXY_URL = 'https://script.google.com/macros/s/AKfycbyWPZN7WLSbJ9NABCIJ92wxdFEYWJolHcnem-nd_a5B6OResS95kbpaiAI1BFn1V4HF/exec';
+// ============================================================
+
+// ===== STATE =====
+let params = {
+  conservadora: {
+    label: "Conservadora", color: "#2E7D32", icon: "🛡️",
+    rules: [
+      { asset: "Renta Fija Soberana (Letras, Bonos CER, Lecaps, etc.)", min: 40, max: 100 },
+      { asset: "Cauciones / Money Market", min: 0, max: 40 },
+      { asset: "ONs Investment Grade", min: 0, max: 30 },
+      { asset: "Renta Variable (Acciones, CEDEARs)", min: 0, max: 10 },
+      { asset: "FCI Renta Fija / T+1", min: 0, max: 30 }
+    ],
+    maxEquityPct: 10, maxHighYieldPct: 5,
+    description: "Capital preservation, baja volatilidad, horizonte corto"
+  },
+  moderada: {
+    label: "Moderada", color: "#F57C00", icon: "⚖️",
+    rules: [
+      { asset: "Renta Fija Soberana (Letras, Bonos CER, Lecaps, etc.)", min: 20, max: 60 },
+      { asset: "Cauciones / Money Market", min: 0, max: 20 },
+      { asset: "ONs Investment Grade", min: 0, max: 30 },
+      { asset: "Renta Variable (Acciones, CEDEARs)", min: 10, max: 40 },
+      { asset: "FCI Renta Fija / T+1", min: 0, max: 20 },
+      { asset: "ONs High Yield", min: 0, max: 15 }
+    ],
+    maxEquityPct: 40, maxHighYieldPct: 15,
+    description: "Balance riesgo/retorno, horizonte medio"
+  },
+  arriesgada: {
+    label: "Arriesgada", color: "#C62828", icon: "🔥",
+    rules: [
+      { asset: "Renta Variable (Acciones, CEDEARs)", min: 30, max: 80 },
+      { asset: "Renta Fija Soberana (Letras, Bonos CER, Lecaps, etc.)", min: 0, max: 30 },
+      { asset: "ONs High Yield", min: 0, max: 30 },
+      { asset: "Cauciones / Money Market", min: 0, max: 10 },
+      { asset: "Opciones / Futuros", min: 0, max: 20 }
+    ],
+    maxEquityPct: 80, maxHighYieldPct: 30,
+    description: "Maximizar retorno, alta volatilidad, horizonte largo"
+  }
+};
+
+let editingProfile = 'conservadora';
+let pdfFile = null;
+let pdfBase64 = null;
+let result = null;
+
+// ===== TABS =====
+function switchTab(tab) {
+  if (tab === 'result' && !result) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-' + tab).classList.add('active');
+  if (tab === 'config') renderConfig();
+  if (tab === 'analyze') renderPreview();
+}
+
+// ===== CONFIG =====
+function renderConfig() {
+  const sel = document.getElementById('profileSelector');
+  sel.innerHTML = Object.entries(params).map(([k, p]) =>
+    `<button class="profile-btn ${editingProfile===k ? 'sel-'+k : ''}" onclick="editingProfile='${k}'; renderConfig()">
+      <span class="pi">${p.icon}</span><span>${p.label}</span>
+    </button>`
+  ).join('');
+
+  const p = params[editingProfile], k = editingProfile;
+  document.getElementById('profileEditor').innerHTML = `
+    <div class="card fade-up" style="border-left:4px solid ${p.color}">
+      <div class="card-header">
+        <span style="font-size:30px">${p.icon}</span>
+        <div style="flex:1">
+          <h3 class="card-title ct-${k}">${p.label}</h3>
+          <input class="desc-input" value="${p.description}" onchange="params['${k}'].description=this.value">
+        </div>
+      </div>
+      <div class="limits-row">
+        <div class="limit-box">
+          <div class="limit-label">Máx. Renta Variable</div>
+          <div class="limit-control">
+            <input type="range" min="0" max="100" value="${p.maxEquityPct}"
+              oninput="params['${k}'].maxEquityPct=+this.value; this.nextElementSibling.textContent=this.value+'%'">
+            <span class="limit-value lv-${k}">${p.maxEquityPct}%</span>
+          </div>
+        </div>
+        <div class="limit-box">
+          <div class="limit-label">Máx. High Yield</div>
+          <div class="limit-control">
+            <input type="range" min="0" max="100" value="${p.maxHighYieldPct}"
+              oninput="params['${k}'].maxHighYieldPct=+this.value; this.nextElementSibling.textContent=this.value+'%'">
+            <span class="limit-value lv-${k}">${p.maxHighYieldPct}%</span>
+          </div>
+        </div>
+      </div>
+      <div class="rules-header">
+        <h4 class="rules-title">Rangos por categoría de activo</h4>
+        <button class="add-btn ab-${k}" onclick="params['${k}'].rules.push({asset:'Nueva categoría',min:0,max:0}); renderConfig()">+ Agregar</button>
+      </div>
+      ${p.rules.map((r, i) => `
+        <div class="rule-row" style="animation:slideIn 0.3s ease ${i*0.05}s both">
+          <input class="asset-input" value="${r.asset}" onchange="params['${k}'].rules[${i}].asset=this.value">
+          <div class="range-group">
+            <div class="range-item">
+              <span class="range-lbl">Mín</span>
+              <input type="number" class="num-input" min="0" max="100" value="${r.min}" onchange="params['${k}'].rules[${i}].min=+this.value; renderConfig()">
+              <span class="pct">%</span>
+            </div>
+            <span class="rsep">—</span>
+            <div class="range-item">
+              <span class="range-lbl">Máx</span>
+              <input type="number" class="num-input" min="0" max="100" value="${r.max}" onchange="params['${k}'].rules[${i}].max=+this.value; renderConfig()">
+              <span class="pct">%</span>
+            </div>
+            <div class="mini-bar"><div class="mb-fill mbf-${k}" style="left:${r.min}%;width:${r.max-r.min}%"></div></div>
+          </div>
+          <button class="remove-btn" onclick="params['${k}'].rules.splice(${i},1); renderConfig()">✕</button>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+// ===== PREVIEW =====
+function renderPreview() {
+  document.getElementById('previewGrid').innerHTML = Object.entries(params).map(([k, p]) =>
+    `<div class="preview-card pc-${k}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:18px">${p.icon}</span>
+        <span style="font-weight:700;font-family:Montserrat,sans-serif;font-size:13px;color:${p.color}">${p.label}</span>
+      </div>
+      <div style="font-size:11px;color:#777;line-height:1.5">RV máx: ${p.maxEquityPct}% · HY máx: ${p.maxHighYieldPct}%</div>
+      <div style="font-size:11px;color:#aaa;margin-top:4px">${p.rules.length} categorías</div>
+    </div>`
+  ).join('');
+}
+
+// ===== FILE =====
+function handleDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const f = e.dataTransfer?.files?.[0];
+  if (f && f.type === 'application/pdf') loadFile(f);
+  else showError('Por favor subí un archivo PDF válido.');
+}
+function handleFileSelect(input) { if (input.files?.[0]) loadFile(input.files[0]); }
+
+function loadFile(file) {
+  pdfFile = file; result = null;
+  document.getElementById('errorBox').style.display = 'none';
+  document.getElementById('loadingArea').style.display = 'none';
+  const dz = document.getElementById('dropzone');
+  dz.classList.add('loaded');
+  document.getElementById('dropContent').innerHTML = `
+    <div style="font-size:38px">📄</div>
+    <div class="file-name">${file.name}</div>
+    <div class="file-size">${(file.size/1024).toFixed(0)} KB</div>
+    <div class="file-change">Click para cambiar archivo</div>`;
+  document.getElementById('analyzeBtn').style.display = 'flex';
+
+  // Pre-read base64
+  const reader = new FileReader();
+  reader.onload = () => { pdfBase64 = reader.result.split(',')[1]; };
+  reader.readAsDataURL(file);
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.innerHTML = `<span>⚠️</span> ${msg}`;
+  box.className = 'error-box';
+  box.style.display = 'flex';
+}
+
+// ===== ANALYZE =====
+async function analyzePDF() {
+  if (!pdfFile || !pdfBase64) return;
+
+  if (PROXY_URL.includes('TU_DEPLOY_ID_ACA')) {
+    showError('Falta configurar la URL del proxy. Abrí el HTML y reemplazá PROXY_URL con tu URL de Google Apps Script.');
+    return;
+  }
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Enviando a Claude...';
+  document.getElementById('errorBox').style.display = 'none';
+
+  // Show loading
+  const loadingArea = document.getElementById('loadingArea');
+  loadingArea.style.display = 'block';
+  loadingArea.innerHTML = `
+    <div class="card">
+      <div class="loading-status">📡 Enviando PDF al servidor...</div>
+      <div class="loading-bar w1"></div>
+      <div class="loading-bar w2"></div>
+      <div class="loading-bar w3"></div>
+    </div>`;
+
+  try {
+    const paramsDesc = Object.entries(params).map(([key, p]) => {
+      const rulesText = p.rules.map(r => `  - ${r.asset}: min ${r.min}%, max ${r.max}%`).join('\n');
+      return `### ${p.label} (${p.icon})\n${p.description}\nMáx. Renta Variable: ${p.maxEquityPct}%\nMáx. High Yield: ${p.maxHighYieldPct}%\nRangos:\n${rulesText}`;
+    }).join('\n\n');
+
+    // Update loading status
+    loadingArea.querySelector('.loading-status').textContent = '🤖 Claude está analizando la cartera...';
+
+    const resp = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pdfBase64: pdfBase64,
+        paramsDescription: paramsDesc
+      })
+    });
+
+    // Apps Script redirects, so follow manually if needed
+    let data;
+    try {
+      data = await resp.json();
+    } catch {
+      const text = await resp.text();
+      showError('Respuesta inesperada del servidor. Verificá que la URL del proxy sea correcta.');
+      console.error('Raw response:', text);
+      return;
+    }
+
+    if (data.error) throw new Error(data.error);
+    if (!data.result) throw new Error('No se recibió resultado del análisis.');
+
+    result = data.result;
+    document.getElementById('resultTab').classList.remove('disabled');
+    renderResult();
+    switchTab('result');
+
+  } catch (err) {
+    console.error(err);
+    showError(`Error: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🔍 Clasificar Cartera';
+    loadingArea.style.display = 'none';
+  }
+}
+
+// ===== RESULT =====
+function renderResult() {
+  if (!result) return;
+  const cls = result.classification;
+  const p = params[cls] || params.moderada;
+  const section = document.getElementById('section-result');
+  const COLORS = ['#1A3F47','#93D500','#2E7D32','#F57C00','#C62828','#5C6BC0','#00897B','#8D6E63'];
+
+  const bars = result.composition
+    ? Object.entries(result.composition).sort((a,b) => b[1]-a[1]).map(([cat, pct], i) => {
+        const c = COLORS[i % COLORS.length];
+        return `<div class="bar-row" style="animation:slideIn 0.4s ease ${i*0.08}s both">
+          <div class="bar-label">${cat}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${c};animation-delay:${i*0.1}s"></div></div>
+          <div class="bar-value" style="color:${c}">${pct.toFixed(1)}%</div>
+        </div>`;
+      }).join('') : '';
+
+  const positions = result.positions?.length
+    ? `<div class="card fade-up"><h4 class="chart-title">Posiciones Detalladas</h4>
+        <div style="overflow-x:auto"><table class="ptable"><thead><tr>
+          <th>Ticker</th><th>Descripción</th><th>Valor</th><th style="text-align:right">%</th><th>Categoría</th>
+        </tr></thead><tbody>
+        ${result.positions.map((pos, i) => `<tr style="animation:fadeUp 0.3s ease ${i*0.04}s both">
+          <td class="tk">${pos.ticker||'-'}</td><td>${pos.description||'-'}</td>
+          <td class="mn">${pos.value||'-'}</td><td class="rt">${pos.percentage!=null?pos.percentage.toFixed(1)+'%':'-'}</td>
+          <td><span class="cat-tag">${pos.category||'-'}</span></td>
+        </tr>`).join('')}
+        </tbody></table></div></div>` : '';
+
+  const warnings = result.warnings?.length
+    ? `<div class="warning-box fade-up"><div class="warning-title">⚠️ Observaciones</div>
+        ${result.warnings.map(w=>`<div class="warning-item">• ${w}</div>`).join('')}</div>` : '';
+
+  const suggestion = result.suggestion
+    ? `<div class="suggestion-box fade-up"><div class="suggestion-title">💼 Sugerencia de Rebalanceo</div>
+        <div class="suggestion-text">${result.suggestion}</div></div>` : '';
+
+  section.innerHTML = `
+    <div class="result-badge rb-${cls} fade-up">
+      <div class="badge-icon">${p.icon}</div>
+      <div>
+        <div class="badge-cat">Cartera clasificada como</div>
+        <div class="badge-label bl-${cls}">${p.label}</div>
+        <div class="badge-conf">
+          Confianza: ${(result.confidence*100).toFixed(0)}%
+          <div class="conf-bar"><div class="conf-fill cf-${cls}" style="width:${result.confidence*100}%"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="info-row">
+      ${result.clientName?`<div class="info-item fade-up"><span class="info-label">Cliente</span><span class="info-value">${result.clientName}</span></div>`:''}
+      ${result.totalValue?`<div class="info-item fade-up"><span class="info-label">Valor Total</span><span class="info-value">${result.totalValue}</span></div>`:''}
+    </div>
+    <div class="reasoning-box fade-up">
+      <div class="reasoning-title">💡 Análisis</div>
+      <div class="reasoning-text">${result.reasoning}</div>
+    </div>
+    ${bars?`<div class="card fade-up"><h4 class="chart-title">Composición de la Cartera</h4>${bars}</div>`:''}
+    ${positions}${warnings}${suggestion}
+    <button class="new-btn" onclick="resetAll()">Analizar otra cartera →</button>`;
+}
+
+function resetAll() {
+  result = null; pdfFile = null; pdfBase64 = null;
+  const dz = document.getElementById('dropzone');
+  dz.classList.remove('loaded');
+  document.getElementById('dropContent').innerHTML = `
+    <div style="opacity:0.6;margin-bottom:8px">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect x="8" y="6" width="32" height="36" rx="4" stroke="#1A3F47" stroke-width="2.5" fill="none"/>
+        <path d="M16 20l8-8 8 8M24 12v20" stroke="#93D500" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="drop-text">Arrastrá el PDF acá o hacé click</div>
+    <div class="drop-hint">Soporta extractos de cuenta, reportes de tenencias, estados de cartera</div>`;
+  document.getElementById('analyzeBtn').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('resultTab').classList.add('disabled');
+  switchTab('analyze');
+}
+
+// INIT
+renderConfig();
+renderPreview();
+</script>
+</body>
+</html>
